@@ -1,0 +1,16 @@
+// Path: codeSage.fe/jsconfig.json
+
+{
+    "compilerOptions": {
+      "baseUrl": "src",
+      "paths": {
+        "@/*": ["*"]
+      },
+      "target": "es6",
+      "module": "commonjs",
+      "allowSyntheticDefaultImports": true,
+      "jsx": "react"
+    },
+    "include": ["src/**/*"],
+    "exclude": ["node_modules", "build"]
+  }

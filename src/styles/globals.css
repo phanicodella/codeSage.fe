@@ -1,0 +1,97 @@
+/* Path: codeSage.fe/src/styles/globals.css */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-surface-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-600 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-surface-500;
+  }
+
+  /* Base styles */
+  body {
+    @apply bg-surface-900 text-surface-50 antialiased;
+  }
+
+  /* Focus styles */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-surface-900;
+  }
+}
+
+@layer components {
+  /* Custom component classes */
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+  }
+
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white;
+  }
+
+  .btn-secondary {
+    @apply bg-surface-700 hover:bg-surface-600 text-white;
+  }
+
+  .input {
+    @apply bg-surface-800 border-surface-700 rounded-lg px-4 py-2 text-surface-100
+           focus:border-primary-500 focus:ring-primary-500;
+  }
+
+  .card {
+    @apply bg-surface-800 rounded-lg shadow-lg p-6;
+  }
+}
+
+/* Custom animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Electron specific styles */
+.titlebar {
+  -webkit-app-region: drag;
+}
+
+.titlebar button {
+  -webkit-app-region: no-drag;
+}
+
+/* Code syntax highlighting */
+.code-block {
+  @apply bg-surface-800 rounded-lg p-4 font-mono text-sm overflow-x-auto;
+}
+
+.code-line {
+  @apply block;
+}
+
+/* Loading states */
+.loading-skeleton {
+  @apply animate-pulse bg-surface-700 rounded;
+}
