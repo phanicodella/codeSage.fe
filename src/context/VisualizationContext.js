@@ -1,19 +1,21 @@
 // Path: codeSage.fe/src/context/VisualizationContext.js
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 import { useCodebase } from './CodebaseContext';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const VisualizationContext = createContext(null);
 
 export const VisualizationProvider = ({ children }) => {
+    const { authFetch } = useAuth();
     const { codebase } = useCodebase();
-    const [visualizationConfig, setVisualizationConfig] = useState({
-        theme: 'dark',
-        layout: 'force',
-        showLabels: true,
-        nodeSize: 20,
-        edgeWidth: 1.0,
-        fontSize: 12
+
+    const [data, setData] = useState({
+        dependency: null,
+        dataFlow: null,
+        bugImpact: null
     });
 
     const [loading, setLoading] = useState({
@@ -28,10 +30,14 @@ export const VisualizationProvider = ({ children }) => {
         bugImpact: null
     });
 
-    const [data, setData] = useState({
-        dependency: null,
-        dataFlow: null,
-        bugImpact: null
+    const [config, setConfig] = useState({
+        theme: 'dark',
+        layout: 'force',
+        nodeSize: 20,
+        edgeWidth: 1.0,
+        fontSize: 12,
+        showLabels: true,
+        showWeights: false
     });
 
     const fetchDependencyGraph = useCallback(async () => {
@@ -41,34 +47,39 @@ export const VisualizationProvider = ({ children }) => {
         setError(prev => ({ ...prev, dependency: null }));
 
         try {
-            const response = await fetch('/api/visualize/dependencies', {
+            const response = await authFetch(`${API_BASE_URL}/api/visualize/dependencies`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     codebasePath: codebase.path,
-                    config: visualizationConfig
+                    config
                 })
             });
 
-            if (!response.ok) throw new Error('Failed to fetch dependency graph');
+            if (!response.ok) {
+                throw new Error('Failed to fetch dependency graph');
+            }
 
             const graphData = await response.json();
             setData(prev => ({ ...prev, dependency: graphData }));
         } catch (err) {
             setError(prev => ({ ...prev, dependency: err.message }));
+            console.error('Dependency graph error:', err);
         } finally {
             setLoading(prev => ({ ...prev, dependency: false }));
         }
-    }, [codebase.path, visualizationConfig]);
+    }, [codebase.path, config, authFetch]);
 
     const fetchDataFlow = useCallback(async (componentId) => {
+        if (!codebase.path || !componentId) return;
+
         setLoading(prev => ({ ...prev, dataFlow: true }));
         setError(prev => ({ ...prev, dataFlow: null }));
 
         try {
-            const response = await fetch('/api/visualize/dataflow', {
+            const response = await authFetch(`${API_BASE_URL}/api/visualize/dataflow`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -76,27 +87,32 @@ export const VisualizationProvider = ({ children }) => {
                 body: JSON.stringify({
                     codebasePath: codebase.path,
                     componentId,
-                    config: visualizationConfig
+                    config
                 })
             });
 
-            if (!response.ok) throw new Error('Failed to fetch data flow');
+            if (!response.ok) {
+                throw new Error('Failed to fetch data flow');
+            }
 
             const flowData = await response.json();
             setData(prev => ({ ...prev, dataFlow: flowData }));
         } catch (err) {
             setError(prev => ({ ...prev, dataFlow: err.message }));
+            console.error('Data flow error:', err);
         } finally {
             setLoading(prev => ({ ...prev, dataFlow: false }));
         }
-    }, [codebase.path, visualizationConfig]);
+    }, [codebase.path, config, authFetch]);
 
     const fetchBugImpact = useCallback(async (bugInfo) => {
+        if (!codebase.path || !bugInfo) return;
+
         setLoading(prev => ({ ...prev, bugImpact: true }));
         setError(prev => ({ ...prev, bugImpact: null }));
 
         try {
-            const response = await fetch('/api/visualize/bug-impact', {
+            const response = await authFetch(`${API_BASE_URL}/api/visualize/bug-impact`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -104,23 +120,26 @@ export const VisualizationProvider = ({ children }) => {
                 body: JSON.stringify({
                     codebasePath: codebase.path,
                     bugInfo,
-                    config: visualizationConfig
+                    config
                 })
             });
 
-            if (!response.ok) throw new Error('Failed to fetch bug impact');
+            if (!response.ok) {
+                throw new Error('Failed to fetch bug impact');
+            }
 
             const impactData = await response.json();
             setData(prev => ({ ...prev, bugImpact: impactData }));
         } catch (err) {
             setError(prev => ({ ...prev, bugImpact: err.message }));
+            console.error('Bug impact error:', err);
         } finally {
             setLoading(prev => ({ ...prev, bugImpact: false }));
         }
-    }, [codebase.path, visualizationConfig]);
+    }, [codebase.path, config, authFetch]);
 
     const updateConfig = useCallback((newConfig) => {
-        setVisualizationConfig(prev => ({
+        setConfig(prev => ({
             ...prev,
             ...newConfig
         }));
@@ -131,12 +150,19 @@ export const VisualizationProvider = ({ children }) => {
         setError(prev => ({ ...prev, [type]: null }));
     }, []);
 
+    // Auto-refresh dependency graph when codebase changes
+    useEffect(() => {
+        if (codebase.path) {
+            fetchDependencyGraph();
+        }
+    }, [codebase.path, fetchDependencyGraph]);
+
     return (
         <VisualizationContext.Provider value={{
-            config: visualizationConfig,
+            data,
             loading,
             error,
-            data,
+            config,
             updateConfig,
             fetchDependencyGraph,
             fetchDataFlow,
